@@ -1,0 +1,82 @@
+version: '3.8'
+
+services:
+    # PHP Service container
+    laravel_eleven_app:
+        platform: linux/amd64
+        build:
+            args:
+                user: laravel_eleven_user
+                uid: 1000
+            context: ..
+            dockerfile: ../Dockerfile
+        image: laravel_eleven_app_image
+        container_name: laravel_eleven_app
+        restart: unless-stopped
+        depends_on:
+            -   laravel_eleven_app_mysql
+        working_dir: /var/www
+        volumes:
+            -   ./:/var/www
+        networks:
+            - laravel_eleven_app_network
+    #nginx service
+    laravel_eleven_webserver:
+        platform: linux/amd64
+        image: nginx:alpine
+        container_name: laravel_eleven_webserver_container
+        restart: unless-stopped
+        ports:
+            - "6162:80"
+        depends_on:
+            -   laravel_eleven_app
+        volumes:
+            -   ./:/var/www
+            - ./docker-compose/nginx/:/etc/nginx/conf.d
+        networks:
+            - laravel_eleven_app_network
+    #mysql service
+    laravel_eleven_app_mysql:
+        platform: linux/amd64
+        image: mysql:5.7.22
+        container_name: laravel_eleven_app_mysql_container
+        restart: unless-stopped
+        ports:
+            - "3337:3306"
+        environment:
+            MYSQL_ROOT_PASSWORD: password
+            MYSQL_DATABASE: laravel_eleven_db
+            MYSQL_USER: laravel_eleven_user
+            MYSQL_PASSWORD: password
+        volumes:
+            -   laravel_eleven_mysql_data:/var/lib/mysql
+        networks:
+            - laravel_eleven_app_network
+    laravel_eleven_phpmyadmin:
+        image: phpmyadmin:5.2.1-apache
+        container_name: laravel_eleven_phpmyadmin_container
+        restart: unless-stopped
+        ports:
+            -   "8383:80"
+        environment:
+            PMA_HOST: laravel_eleven_app_mysql
+            PMA_PORT: 3306
+            PMA_USER: root
+            PMA_PASSWORD: password
+        depends_on:
+            -   laravel_eleven_app_mysql
+        networks:
+            - laravel_eleven_app_network
+    laravel_eleven_redis:
+        image: redis:7.2-alpine
+        container_name: laravel_eleven_redis_container
+        ports:
+            -   "7379:6379"
+        networks:
+            - laravel_eleven_app_network
+volumes:
+    laravel_eleven_mysql_data:
+        driver: local
+networks:
+    laravel_eleven_app_network:
+        driver: bridge
