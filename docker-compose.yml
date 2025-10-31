@@ -9,7 +9,7 @@ services:
                 user: laravel_eleven_user
                 uid: 1000
             context: ..
-            dockerfile: ../Dockerfile
+            dockerfile: ./Dockerfile
         image: laravel_eleven_app_image
         container_name: laravel_eleven_app
         restart: unless-stopped
